@@ -1,12 +1,14 @@
 package com.example.marker;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.res.ResourcesCompat;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -31,27 +33,42 @@ public class MainActivity extends AppCompatActivity {
 
         markers = new ArrayList<>();
 
-        imageView.setOnTouchListener(new View.OnTouchListener() {
+        imageView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
-            public boolean onTouch(View view, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    float x = event.getX();
-                    float y = event.getY();
+            public boolean onLongClick(View view) {
+                view.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View view, MotionEvent event) {
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                            float x = event.getX();
+                            float y = event.getY();
 
-                    // Add marker
-                    markers.add(new PointF(x, y));
+                            // Add marker
+                            markers.add(new PointF(x, y));
 
-                    // Update UI
-                    redrawMarkers();
+                            // Update UI
+                            redrawMarkers();
 
-                    return true;
-                }
+                            return true;
+                        }
+                        return false;
+                    }
+                });
                 return false;
             }
         });
     }
 
     private void redrawMarkers() {
+
+        //Anchor Drawable to be drawn on image
+        Drawable anchorDrawable = ResourcesCompat.getDrawable(
+                                    getResources(),
+                                    R.drawable.anchor,
+                                    null
+                                );
+
+
         // Load the drawing image from resources
         Bitmap drawingBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.dots);
 
@@ -61,15 +78,19 @@ public class MainActivity extends AppCompatActivity {
         // Create a canvas to draw on the bitmap
         Canvas canvas = new Canvas(mutableBitmap);
 
-        // Set up paint for marker drawing
-        Paint paint = new Paint();
-        paint.setColor(getResources().getColor(R.color.red));
-        paint.setStyle(Paint.Style.FILL);
-        paint.setAntiAlias(true);
+        // Convert the Drawable to a Bitmap
+        Bitmap markerBitmap = Bitmap.createBitmap(
+                anchorDrawable.getIntrinsicWidth(),
+                anchorDrawable.getIntrinsicHeight(),
+                Bitmap.Config.ARGB_8888
+        );
+        Canvas markerCanvas = new Canvas(markerBitmap);
+        anchorDrawable.setBounds(0, 0, markerCanvas.getWidth(), markerCanvas.getHeight());
+        anchorDrawable.draw(markerCanvas);
 
         // Draw the markers on the canvas
         for (PointF marker : markers) {
-            canvas.drawCircle(marker.x, marker.y, 10, paint);
+            canvas.drawBitmap(markerBitmap, marker.x, marker.y, null);
         }
 
         // Set the updated bitmap on the ImageView
